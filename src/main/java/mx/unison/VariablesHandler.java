@@ -1,48 +1,66 @@
+
 package mx.unison;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class VariablesHandler extends DefaultHandler {
 
-    public VariablesHandler(String var) {
-        super();
+    private final String variableBuscada;
+    private final List<Double> valores = new ArrayList<>();
+    private boolean leyendoVariable = false;
+    private final StringBuilder contenido = new StringBuilder();
+
+    public VariablesHandler(String variableBuscada) {
+        this.variableBuscada = variableBuscada;
     }
 
     @Override
-    public void startDocument() throws SAXException {
-        super.startDocument();
+    public void startElement(String uri, String localName,
+                             String qName, Attributes attributes)
+            throws SAXException {
+
+        String nombre = localName.isEmpty() ? qName : localName;
+
+        if (nombre.equals(variableBuscada)) {
+            leyendoVariable = true;
+            contenido.setLength(0);
+        }
     }
 
     @Override
-    public void endElement(String uri, String localName, String qName) throws SAXException {
-        super.endElement(uri, localName, qName);
+    public void characters(char[] ch, int start, int length)
+            throws SAXException {
+
+        if (leyendoVariable) {
+            contenido.append(ch, start, length);
+        }
     }
 
     @Override
-    public void characters(char[] ch, int start, int length) throws SAXException {
-        super.characters(ch, start, length);
+    public void endElement(String uri, String localName,
+                           String qName) throws SAXException {
+
+        String nombre = localName.isEmpty() ? qName : localName;
+
+        if (leyendoVariable && nombre.equals(variableBuscada)) {
+            String texto = contenido.toString().trim();
+
+            try {
+                valores.add(Double.parseDouble(texto));
+            } catch (NumberFormatException e) {
+                // Ignorar valores vacíos o no numéricos.
+            }
+
+            leyendoVariable = false;
+        }
     }
 
-    @Override
-    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-        super.startElement(uri, localName, qName, attributes);
-    }
-
-    @Override
-    public void warning(SAXParseException e) throws SAXException {
-        super.warning(e);
-    }
-
-    @Override
-    public void error(SAXParseException e) throws SAXException {
-        super.error(e);
-    }
-
-    @Override
-    public void fatalError(SAXParseException e) throws SAXException {
-        super.fatalError(e);
+    public List<Double> obtenerValores() {
+        return new ArrayList<>(valores);
     }
 }
